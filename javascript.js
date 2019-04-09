@@ -1,67 +1,211 @@
-//javascript.js
-//set map options
-            var myLatLng = {lat: 51.5, lng: -0.1};
-            var mapOptions = {
-                center: myLatLng,
-                zoom: 7,
-                mapTypeId: google.maps.MapTypeId.ROADMAP
-                
-            };
+//create a geocoder object to use the geocode
+var geocoder = new google.maps.Geocoder();
+var data;
+
+//Ajax Call for the sign up form 
+//Once the form is submitted
+$("#signupform").submit(function(event){
+    //hide message
+    $("#signupmessage").hide();
+    //show spinner
+    $("#spinner").css("display", "block");
+    //prevent default php processing
+    event.preventDefault();
+    //collect user inputs
+    var datatopost = $(this).serializeArray();
+//    console.log(datatopost);
+    //send them to signup.php using AJAX
+    $.ajax({
+        url: "signup.php",
+        type: "POST",
+        data: datatopost,
+        success: function(data){
+            if(data){
+                $("#signupmessage").html(data);
+                //hide spinner
+                $("#spinner").css("display", "none");
+                //show message
+                $("#signupmessage").slideDown();
+            }
+        },
+        error: function(){
+            $("#signupmessage").html("<div class='alert alert-danger'>There was an error with the Ajax Call. Please try again later.</div>");
+            //hide spinner
+            $("#spinner").css("display", "none");
+            //show message
+            $("#signupmessage").slideDown();
             
-            //create map
-            var map = new google.maps.Map(document.getElementById('googleMap'), mapOptions);
-
-//create a DirectionsService object to use the route method and get a result for our request
-            var directionsService = new google.maps.DirectionsService();
-            
-            //create a DirectionsRenderer object which we will use to display the route
-            var directionsDisplay = new google.maps.DirectionsRenderer();
-            
-            //bind the DirectionsRenderer to the map
-            directionsDisplay.setMap(map);
-
-
-//define calcRoute function
-function calcRoute(){
-    //create request
-    var request = {
-        origin: document.getElementById("from").value,
-        destination: document.getElementById("to").value,
-        travelMode: google.maps.TravelMode.DRIVING, //WALKING, BYCYCLING, TRANSIT
-        unitSystem: google.maps.UnitSystem.IMPERIAL
-    }
-
-    //pass the request to the route method
-    directionsService.route(request, function(result, status){
-    if(status == google.maps.DirectionsStatus.OK){
-
-        //Get distance and time
-        $("#output").html("<div class='alert-info'>From: "+document.getElementById("from").value+".<br />To: "+document.getElementById("to").value+".<br /> Driving distance: "+result.routes[0].legs[0].distance.text+".<br />Duration: "+result.routes[0].legs[0].duration.text+".</div>");
-
-        //display route
-        directionsDisplay.setDirections(result);
-    }else{
-        //delete route from map
-        directionsDisplay.setDirections({routes: []});
-        //center map in London
-        map.setCenter(myLatLng);
-        
-        //show error message
-        $("#output").html("<div class='alert-danger'>Could not retrieve driving distance.</div>");
-    }
+        }
+    
     });
 
-}
+});
+
+//Ajax Call for the login form
+//Once the form is submitted
+$("#loginform").submit(function(event){ 
+    //hide message
+    $("#loginmessage").hide();
+    //show spinner
+    $("#spinner").css("display", "block");
+    //prevent default php processing
+    event.preventDefault();
+    //collect user inputs
+    var datatopost = $(this).serializeArray();
+//    console.log(datatopost);
+    //send them to login.php using AJAX
+    $.ajax({
+        url: "login.php",
+        type: "POST",
+        data: datatopost,
+        success: function(data){
+            if(data == "success"){
+                window.location = "mainpageloggedin.php";
+            }else{
+                $('#loginmessage').html(data);   
+                //hide spinner
+                $("#spinner").css("display", "none");
+                //show message
+                $("#loginmessage").slideDown();
+            }
+        },
+        error: function(){
+            $("#loginmessage").html("<div class='alert alert-danger'>There was an error with the Ajax Call. Please try again later.</div>");
+            //hide spinner
+            $("#spinner").css("display", "none");
+            //show message
+            $("#loginmessage").slideDown();
+            
+        }
+    
+    });
+
+});
+
+
+//Ajax Call for the forgot password form
+//Once the form is submitted
+$("#forgotpasswordform").submit(function(event){ 
+    //hide message
+    $("#forgotpasswordmessage").hide();
+    //show spinner
+    $("#spinner").css("display", "block");
+    //prevent default php processing
+    event.preventDefault();
+    //collect user inputs
+    var datatopost = $(this).serializeArray();
+//    console.log(datatopost);
+    //send them to signup.php using AJAX
+    $.ajax({
+        url: "forgot-password.php",
+        type: "POST",
+        data: datatopost,
+        success: function(data){
+            $('#forgotpasswordmessage').html(data);
+            //hide spinner
+            $("#spinner").css("display", "none");
+            //show message
+            $("#forgotpasswordmessage").slideDown();
+        },
+        error: function(){
+            $("#forgotpasswordmessage").html("<div class='alert alert-danger'>There was an error with the Ajax Call. Please try again later.</div>");
+            //hide spinner
+            $("#spinner").css("display", "none");
+            //show message
+            $("#forgotpasswordmessage").slideDown();
+        }
+    
+    });
+
+});
+
+//Ajax Call for the search form 
+$("#searchform").submit(function(event){
+    $("#results").fadeOut();
+    $("#spinner").css("display", "block");
+    event.preventDefault();
+    data = $(this).serializeArray();
+    console.log(data);
+    
+    
+    getSearchTripDepartureCoordinates();
+    
+});
+                        
+    //define functions
+    function getSearchTripDepartureCoordinates(){
+        geocoder.geocode(
+            {
+                'address' : document.getElementById("departure").value
+            },
+            function(results, status){
+                if(status == google.maps.GeocoderStatus.OK){
+                    departureLongitude = results[0].geometry.location.lng();
+                    departureLatitude = results[0].geometry.location.lat();
+                    data.push({name:'departureLongitude', value: departureLongitude});
+                    data.push({name:'departureLatitude', value: departureLatitude});
+                    getSearchTripDestinationCoordinates();
+                }else{
+                    getSearchTripDestinationCoordinates();
+                }
+
+            }
+        );
+    }
+
+    function getSearchTripDestinationCoordinates(){
+        geocoder.geocode(
+            {
+                'address' : document.getElementById("destination").value
+            },
+            function(results, status){
+                if(status == google.maps.GeocoderStatus.OK){
+                    destinationLongitude = results[0].geometry.location.lng();
+                    destinationLatitude = results[0].geometry.location.lat();
+                    data.push({name:'destinationLongitude', value: destinationLongitude});
+                    data.push({name:'destinationLatitude', value: destinationLatitude});
+                    submitSearchTripRequest();
+                }else{
+                    submitSearchTripRequest();
+                }
+
+            }
+        );
+
+    }
+
+    function submitSearchTripRequest(){
+        console.log(data);
+        $.ajax({
+            url: "search.php",
+            data: data,
+            type: "POST",
+            success: function(data2){
+                console.log(data);
+                if(data2){
+                    $('#results').html(data2);
+                    //accordion
+                    $("#message").accordion({
+                        icons: false,
+                        active:false,
+                        collapsible: true,
+                        heightStyle: "content"   
+                    });
+                }
+                $("#spinner").css("display", "none");
+                $("#results").fadeIn();
+        },
+            error: function(){
+                $("#results").html("<div class='alert alert-danger'>There was an error with the Ajax Call. Please try again later.</div>");
+                $("#spinner").css("display", "none");
+                $("#results").fadeIn();
+
+    }
+        }); 
+
+    }
 
 
 
-//create autocomplete objects for all inputs
-var options = {
-    types: ['(cities)']   
-}
 
-var input1 = document.getElementById("from");
-var autocomplete1 = new google.maps.places.Autocomplete(input1, options);
 
-var input2 = document.getElementById("to");
-var autocomplete2 = new google.maps.places.Autocomplete(input2, options);
